@@ -1,99 +1,11 @@
 import themes from "./themes";
 import GamePlay from "./GamePlay";
 import PositionedCharacter from "./PositionedCharacter";
-import Bowman from "./characters/Bowman";
-import Swordsman from "./characters/Swordsman";
-import Magician from "./characters/Magician";
-import Daemon from "./characters/Daemon";
-import Vampire from "./characters/Vampire";
-import Undead from "./characters/Undead";
+import Team from "./Team";
 import { generateTeam } from "./generators";
 import cursors from "./cursors";
 import GameState from "./GameState";
-
-export function matrix(length) {
-  const matrix = [];
-  let el = 0;
-
-  for (let i = 0; i < length; i += Math.sqrt(length)) {
-    matrix[el] = [];
-    for (let j = i; j < (el + 1) * Math.sqrt(length); j++) {
-      matrix[el].push(j);
-    }
-    el++;
-  }
-
-  return matrix;
-}
-
-export function binar(position, length) {
-  let arr = matrix(length);
-  let i = 0;
-  let j = 0;
-  let flag = false;
-
-  arr.forEach((element) => {
-    element.forEach((item) => {
-      if (item == position) {
-        i = element.indexOf(item);
-        flag = true;
-      }
-    });
-
-    if (flag) {
-      j = arr.indexOf(element);
-      flag = false;
-    }
-  });
-
-  return [j, i];
-}
-
-export function distArray(position, length, dist) {
-  const charBinarPosition = binar(position, length);
-  const matrixArr = matrix(length);
-
-  let minX = charBinarPosition[0] - dist;
-  let maxX = charBinarPosition[0] + dist;
-  let minY = charBinarPosition[1] - dist;
-  let maxY = charBinarPosition[1] + dist;
-
-  if (minX < 0) {
-    minX = 0;
-  }
-
-  if (maxX >= Math.sqrt(length) - 1) {
-    maxX = Math.sqrt(length) - 1;
-  }
-
-  if (minY < 0) {
-    minY = 0;
-  }
-
-  if (maxY >= Math.sqrt(length) - 1) {
-    maxY = Math.sqrt(length) - 1;
-  }
-
-  const distArr = [];
-
-  matrixArr.forEach((element) => {
-    element.forEach((el) => {
-      const binarEl = binar(el, length);
-      if (
-        binarEl[0] >= minX &&
-        binarEl[0] <= maxX &&
-        binarEl[1] >= minY &&
-        binarEl[1] <= maxY
-      ) {
-        distArr.push(el);
-      }
-    });
-  });
-
-  distArr.splice(distArr.indexOf(position), 1);
-
-  return distArr;
-}
+import { distArray } from './functions';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -111,39 +23,29 @@ export default class GameController {
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
-    switch (this.level) {
-      case 1: {
-        this.theme = themes.prairie;
-        break;
-      }
-      case 2: {
-        this.theme = themes.desert;
-        break;
-      }
-      case 3: {
-        this.theme = themes.arctic;
-        break;
-      }
-      case 4: {
-        this.theme = themes.mountain;
-        break;
-      }
-    }
+    const obj = {
+      1: themes.prairie,
+      2: themes.desert,
+      3: themes.arctic,
+      4: themes.mountain,
+    };
+
+    this.theme = obj[this.level];
 
     this.gamePlay.drawUi(this.theme);
 
     if (!this.loadFlag) {
-      const startUserGame = [Bowman, Swordsman];
-      const user = [Bowman, Swordsman, Magician];
-      const comp = [Vampire, Daemon, Undead];
+      const startUserGame = Team.startUserTeam();
+      const user = Team.userTeam();
+      const comp = Team.compTeam();
 
       const { cells } = this.gamePlay;
 
       const userCells = [];
       cells.forEach((element) => {
         if (
-          cells.indexOf(element) % 8 == 0 ||
-          cells.indexOf(element) % 8 == 1
+          cells.indexOf(element) % 8 === 0 ||
+          cells.indexOf(element) % 8 === 1
         ) {
           userCells.push(cells.indexOf(element));
         }
@@ -152,8 +54,8 @@ export default class GameController {
       const compCells = [];
       cells.forEach((element) => {
         if (
-          cells.indexOf(element) % 8 == 6 ||
-          cells.indexOf(element) % 8 == 7
+          cells.indexOf(element) % 8 === 6 ||
+          cells.indexOf(element) % 8 === 7
         ) {
           compCells.push(cells.indexOf(element));
         }
@@ -170,7 +72,7 @@ export default class GameController {
         return Array.from(set);
       }
 
-      if (this.level == 1) {
+      if (this.level === 1) {
         const startUser = generateTeam(startUserGame, 1, 2);
         const startComp = generateTeam(comp, 1, 2);
 
@@ -191,7 +93,7 @@ export default class GameController {
             new PositionedCharacter(element, compCells[indexChar])
           );
         });
-      } else if (this.level == 2) {
+      } else if (this.level === 2) {
         this.characterArr.forEach((item) => {
           item.character.levelUp();
         });
@@ -215,7 +117,7 @@ export default class GameController {
             new PositionedCharacter(element, compCells[index])
           );
         });
-      } else if (this.level == 3) {
+      } else if (this.level === 3) {
         this.characterArr.forEach((item) => {
           item.character.levelUp();
         });
@@ -239,7 +141,7 @@ export default class GameController {
             new PositionedCharacter(element, compCells[index])
           );
         });
-      } else if (this.level == 4) {
+      } else if (this.level === 4) {
         this.characterArr.forEach((item) => {
           item.character.levelUp();
         });
@@ -308,17 +210,17 @@ export default class GameController {
     let teamUser = [];
     this.characterArr.forEach((item) => {
       if (
-        item.character.type == "vampire" ||
-        item.character.type == "undead" ||
-        item.character.type == "daemon"
+        item.character.type === "vampire" ||
+        item.character.type === "undead" ||
+        item.character.type === "daemon"
       ) {
         teamComp.push(item);
       }
 
       if (
-        item.character.type == "bowman" ||
-        item.character.type == "swordsman" ||
-        item.character.type == "magician"
+        item.character.type === "bowman" ||
+        item.character.type === "swordsman" ||
+        item.character.type === "magician"
       ) {
         teamUser.push(item);
       }
@@ -327,7 +229,7 @@ export default class GameController {
     if (teamComp.length > 0) {
       const compAttak = [];
       teamComp.forEach((item) => {
-        let attackArr = distArray(item.position, 64, item.character.hit);
+        let attackArr = distArray(item.position, this.gamePlay.boardSize ** 2, item.character.hit);
         teamUser.forEach((elem) => {
           if (attackArr.indexOf(elem.position) !== -1) {
             compAttak.push({ attacker: item, defender: elem });
@@ -372,13 +274,13 @@ export default class GameController {
         });
 
         const player = teamComp[indexComp];
-        const copmStep = distArray(player.position, 64, player.character.step);
+        const copmStep = distArray(player.position, this.gamePlay.boardSize ** 2, player.character.step);
 
         let indexSet = new Set();
 
         while (indexSet.size < 1) {
           let indexC = Math.floor(Math.random() * copmStep.length);
-          if (userPositions.indexOf(indexC) == -1) {
+          if (userPositions.indexOf(indexC) === -1) {
             indexSet.add(indexC);
           }
         }
@@ -416,19 +318,19 @@ export default class GameController {
     this.characterArr.forEach((item) => {
       if (item.position === index) {
         if (
-          item.character.type == "bowman" ||
-          item.character.type == "swordsman" ||
-          item.character.type == "magician" ||
-          this.state.status == "partner"
+          item.character.type === "bowman" ||
+          item.character.type === "swordsman" ||
+          item.character.type === "magician" ||
+          this.state.status === "partner"
         ) {
           if (
-            this.selectedChar != null &&
-            this.selectedChar.position == index
+            this.selectedChar !== null &&
+            this.selectedChar.position === index
           ) {
             this.gamePlay.deselectCell(this.selectedChar.position);
             this.selectedChar = null;
           } else {
-            if (this.selectedChar != null) {
+            if (this.selectedChar !== null) {
               this.gamePlay.deselectCell(this.selectedChar.position);
             }
 
@@ -449,9 +351,9 @@ export default class GameController {
       }
     });
 
-    if (this.state != null && this.state.status == "go") {
+    if (this.state !== null && this.state.status === "go") {
       this.characterArr.forEach((item) => {
-        if (item == this.selectedChar) {
+        if (item === this.selectedChar) {
           this.gamePlay.deselectCell(this.selectedChar.position);
           item.position = index;
           this.gamePlay.redrawPositions(this.characterArr);
@@ -462,22 +364,22 @@ export default class GameController {
       });
     }
 
-    if (this.state != null && this.state.status == "never") {
+    if (this.state !== null && this.state.status === "never") {
       GamePlay.showMessage("Переход невозможен");
     }
 
     const userT = [];
     this.characterArr.forEach((item) => {
       if (
-        item.character.type == "bowman" ||
-        item.character.type == "swordsman" ||
-        item.character.type == "magician"
+        item.character.type === "bowman" ||
+        item.character.type === "swordsman" ||
+        item.character.type === "magician"
       ) {
         userT.push(item);
       }
     });
 
-    if (userT.length == 0) {
+    if (userT.length === 0) {
       this.characterArr = [];
       this.selectedChar = null;
       this.gamePlay.redrawPositions(this.characterArr);
@@ -510,9 +412,9 @@ export default class GameController {
 
     this.characterArr.forEach((item) => {
       if (
-        item.character.type == "daemon" ||
-        item.character.type == "vampire" ||
-        item.character.type == "undead"
+        item.character.type === "daemon" ||
+        item.character.type === "vampire" ||
+        item.character.type === "undead"
       ) {
         compPositions.push(item.position);
       } else {
@@ -523,14 +425,14 @@ export default class GameController {
     if (this.selectedChar != null) {
       const stepArray = distArray(
         this.selectedChar.position,
-        64,
+        this.gamePlay.boardSize ** 2,
         this.selectedChar.character.step
       );
-      if (stepArray.indexOf(index) != -1) {
-        if (compPositions.indexOf(index) != -1) {
+      if (stepArray.indexOf(index) !== -1) {
+        if (compPositions.indexOf(index) !== -1) {
           this.gamePlay.setCursor(cursors.notallowed);
           this.state = { status: "never" };
-        } else if (userPosition.indexOf(index) != -1) {
+        } else if (userPosition.indexOf(index) !== -1) {
           this.gamePlay.setCursor(cursors.pointer);
           this.state = { status: "partner" };
         } else {
@@ -544,25 +446,25 @@ export default class GameController {
       }
       const attackArray = distArray(
         this.selectedChar.position,
-        64,
+        this.gamePlay.boardSize ** 2,
         this.selectedChar.character.hit
       );
 
       this.characterArr.forEach((item) => {
         if (
-          item.character.type == "daemon" ||
-          item.character.type == "vampire" ||
-          item.character.type == "undead"
+          item.character.type === "daemon" ||
+          item.character.type === "vampire" ||
+          item.character.type === "undead"
         ) {
           if (
-            attackArray.indexOf(item.position) != -1 &&
+            attackArray.indexOf(item.position) !== -1 &&
             index == item.position
           ) {
             this.gamePlay.setCursor(cursors.crosshair);
             this.gamePlay.selectCell(index, "red");
             this.state = { status: "attack", target: item };
           }
-        } else if (item.position == index) {
+        } else if (item.position === index) {
           this.gamePlay.setCursor(cursors.pointer);
         }
       });
@@ -572,7 +474,7 @@ export default class GameController {
   onCellLeave(index) {
     // TODO: react to mouse leave
     this.saveFlag = false;
-    if (this.selectedChar != null && this.selectedChar.position != index) {
+    if (this.selectedChar !== null && this.selectedChar.position !== index) {
       this.gamePlay.deselectCell(index);
     }
   }
@@ -590,11 +492,8 @@ export default class GameController {
 
   saveGame() {
     if (!this.saveFlag) {
-      const saveObj = {};
-      saveObj.charArr = this.characterArr;
-      saveObj.balls = this.balls;
-      saveObj.level = this.level;
-      this.stateService.save(GameState(saveObj));
+      const saveObj = new GameState(this.characterArr, this.balls, this.level);
+      this.stateService.save(saveObj);
       this.saveFlag = true;
       GamePlay.showMessage("Игра загружена!");
     }
@@ -606,7 +505,7 @@ export default class GameController {
 
       if (loadObj) {
         this.loadFlag = true;
-        this.characterArr = loadObj.charArr;
+        this.characterArr = loadObj.characterArr;
         this.level = loadObj.level;
         this.balls = loadObj.balls;
         this.init();

@@ -1,7 +1,7 @@
 export default class GameState {
-  static from(object) {
-    // TODO:
-    if (typeof object === "object") return object;
-    return null;
+  constructor(characterArr, balls, level) {
+    this.characterArr = characterArr;
+    this.balls = balls;
+    this.level = level;
   }
 }
