@@ -5,7 +5,13 @@ import Team from "./Team";
 import { generateTeam } from "./generators";
 import cursors from "./cursors";
 import GameState from "./GameState";
-import { distArray } from './functions';
+import { distArray } from "./functions";
+
+function correctType(type) {
+  return type === "bowman" || type === "swordsman" || type === "magician"
+    ? true
+    : false;
+}
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -209,19 +215,11 @@ export default class GameController {
     let teamComp = [];
     let teamUser = [];
     this.characterArr.forEach((item) => {
-      if (
-        item.character.type === "vampire" ||
-        item.character.type === "undead" ||
-        item.character.type === "daemon"
-      ) {
+      if (!correctType(item.character.type)) {
         teamComp.push(item);
       }
 
-      if (
-        item.character.type === "bowman" ||
-        item.character.type === "swordsman" ||
-        item.character.type === "magician"
-      ) {
+      if (correctType(item.character.type)) {
         teamUser.push(item);
       }
     });
@@ -229,7 +227,11 @@ export default class GameController {
     if (teamComp.length > 0) {
       const compAttak = [];
       teamComp.forEach((item) => {
-        let attackArr = distArray(item.position, this.gamePlay.boardSize ** 2, item.character.hit);
+        let attackArr = distArray(
+          item.position,
+          this.gamePlay.boardSize ** 2,
+          item.character.hit
+        );
         teamUser.forEach((elem) => {
           if (attackArr.indexOf(elem.position) !== -1) {
             compAttak.push({ attacker: item, defender: elem });
@@ -274,7 +276,11 @@ export default class GameController {
         });
 
         const player = teamComp[indexComp];
-        const copmStep = distArray(player.position, this.gamePlay.boardSize ** 2, player.character.step);
+        const copmStep = distArray(
+          player.position,
+          this.gamePlay.boardSize ** 2,
+          player.character.step
+        );
 
         let indexSet = new Set();
 
@@ -318,9 +324,7 @@ export default class GameController {
     this.characterArr.forEach((item) => {
       if (item.position === index) {
         if (
-          item.character.type === "bowman" ||
-          item.character.type === "swordsman" ||
-          item.character.type === "magician" ||
+          correctType(item.character.type) ||
           this.state.status === "partner"
         ) {
           if (
@@ -370,11 +374,7 @@ export default class GameController {
 
     const userT = [];
     this.characterArr.forEach((item) => {
-      if (
-        item.character.type === "bowman" ||
-        item.character.type === "swordsman" ||
-        item.character.type === "magician"
-      ) {
+      if (correctType(item.character.type)) {
         userT.push(item);
       }
     });
@@ -411,11 +411,7 @@ export default class GameController {
     const userPosition = [];
 
     this.characterArr.forEach((item) => {
-      if (
-        item.character.type === "daemon" ||
-        item.character.type === "vampire" ||
-        item.character.type === "undead"
-      ) {
+      if (!correctType(item.character.type)) {
         compPositions.push(item.position);
       } else {
         userPosition.push(item.position);
@@ -451,14 +447,10 @@ export default class GameController {
       );
 
       this.characterArr.forEach((item) => {
-        if (
-          item.character.type === "daemon" ||
-          item.character.type === "vampire" ||
-          item.character.type === "undead"
-        ) {
+        if (!correctType(item.character.type)) {
           if (
             attackArray.indexOf(item.position) !== -1 &&
-            index == item.position
+            index === item.position
           ) {
             this.gamePlay.setCursor(cursors.crosshair);
             this.gamePlay.selectCell(index, "red");
