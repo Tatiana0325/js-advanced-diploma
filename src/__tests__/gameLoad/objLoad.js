@@ -3,6 +3,5 @@ export default function objLoad() {
     'charArr': [],
     'balls': 0,
     'level': 1
-  }`
+  }`;
 }
-  
