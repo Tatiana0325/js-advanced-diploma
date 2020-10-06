@@ -105,6 +105,7 @@ export default class GameController {
     this.state = null;
     this.balls = 0;
     this.loadFlag = false;
+    this.saveFlag = false;
   }
 
   init() {
@@ -333,9 +334,17 @@ export default class GameController {
           }
         });
       });
+
+      compAttak.sort((a, b) => {
+        const { attack } = a.attacker.character;
+        const { defence } = a.defender.character;
+        const { attack: attackB } = b.attacker.character;
+        const { defence: defenceB } = b.defender.character;
+        return defence - attack - (defenceB - attackB);
+      });
+
       if (compAttak.length > 0) {
         const compPlayer = compAttak[0].attacker;
-        this.gamePlay.deselectCell(compPlayer.position);
         const userPlayer = compAttak[0].defender;
 
         const { defence } = userPlayer.character;
@@ -357,18 +366,27 @@ export default class GameController {
         );
       } else {
         let indexComp = Math.floor(Math.random() * teamComp.length);
+        const userPositions = [];
+        teamUser.forEach((item) => {
+          userPositions.push(item.position);
+        });
+
         const player = teamComp[indexComp];
         const copmStep = distArray(player.position, 64, player.character.step);
-        let index = Math.floor(Math.random() * copmStep.length);
-        let indexChar = this.characterArr.indexOf(player);
-        this.characterArr[indexChar].position = index;
-      }
 
-      if (teamUser.length == 0) {
-        this.characterArr = [];
-        this.selectedChar = null;
-        this.state = null;
-        GamePlay.showMessage(`Вы проиграли!\n Счет: ${this.balls}`);
+        let indexSet = new Set();
+
+        while (indexSet.size < 1) {
+          let indexC = Math.floor(Math.random() * copmStep.length);
+          if (userPositions.indexOf(indexC) == -1) {
+            indexSet.add(indexC);
+          }
+        }
+
+        const indexArray = Array.from(indexSet);
+
+        let indexChar = this.characterArr.indexOf(player);
+        this.characterArr[indexChar].position = indexArray[0];
       }
     } else {
       this.characterArr.forEach(
@@ -394,21 +412,23 @@ export default class GameController {
 
   onCellClick(index) {
     // TODO: react to click
+    this.saveFlag = false;
     this.characterArr.forEach((item) => {
       if (item.position === index) {
         if (
-          item.character.type === "bowman" ||
-          item.character.type === "swordsman" ||
-          item.character.type === "magician"
+          item.character.type == "bowman" ||
+          item.character.type == "swordsman" ||
+          item.character.type == "magician" ||
+          this.state.status == "partner"
         ) {
           if (
-            this.selectedChar !== null &&
-            this.selectedChar.position === index
+            this.selectedChar != null &&
+            this.selectedChar.position == index
           ) {
             this.gamePlay.deselectCell(this.selectedChar.position);
             this.selectedChar = null;
           } else {
-            if (this.selectedChar !== null) {
+            if (this.selectedChar != null) {
               this.gamePlay.deselectCell(this.selectedChar.position);
             }
 
@@ -429,9 +449,9 @@ export default class GameController {
       }
     });
 
-    if (this.state !== null && this.state.status === "go") {
+    if (this.state != null && this.state.status == "go") {
       this.characterArr.forEach((item) => {
-        if (item === this.selectedChar) {
+        if (item == this.selectedChar) {
           this.gamePlay.deselectCell(this.selectedChar.position);
           item.position = index;
           this.gamePlay.redrawPositions(this.characterArr);
@@ -441,10 +461,34 @@ export default class GameController {
         }
       });
     }
+
+    if (this.state != null && this.state.status == "never") {
+      GamePlay.showMessage("Переход невозможен");
+    }
+
+    const userT = [];
+    this.characterArr.forEach((item) => {
+      if (
+        item.character.type == "bowman" ||
+        item.character.type == "swordsman" ||
+        item.character.type == "magician"
+      ) {
+        userT.push(item);
+      }
+    });
+
+    if (userT.length == 0) {
+      this.characterArr = [];
+      this.selectedChar = null;
+      this.gamePlay.redrawPositions(this.characterArr);
+      this.state = null;
+      GamePlay.showMessage(`Вы проиграли!\n Счет: ${this.balls}`);
+    }
   }
 
   onCellEnter(index) {
     // TODO: react to mouse enter
+    this.saveFlag = false;
     const charbase = {
       medal: "\ud83c\udf96",
       swords: "\u2694",
@@ -461,19 +505,39 @@ export default class GameController {
       }
     });
 
-    if (this.selectedChar !== null) {
-      if (this.beforeIndex !== null && this.beforeIndex !== index) {
-        this.gamePlay.deselectCell(this.beforeIndex);
+    const compPositions = [];
+    const userPosition = [];
+
+    this.characterArr.forEach((item) => {
+      if (
+        item.character.type == "daemon" ||
+        item.character.type == "vampire" ||
+        item.character.type == "undead"
+      ) {
+        compPositions.push(item.position);
+      } else {
+        userPosition.push(item.position);
       }
+    });
+
+    if (this.selectedChar != null) {
       const stepArray = distArray(
         this.selectedChar.position,
         64,
         this.selectedChar.character.step
       );
-      if (stepArray.indexOf(index) !== -1) {
-        this.gamePlay.setCursor(cursors.pointer);
-        this.gamePlay.selectCell(index, "green");
-        this.state = { status: "go", index };
+      if (stepArray.indexOf(index) != -1) {
+        if (compPositions.indexOf(index) != -1) {
+          this.gamePlay.setCursor(cursors.notallowed);
+          this.state = { status: "never" };
+        } else if (userPosition.indexOf(index) != -1) {
+          this.gamePlay.setCursor(cursors.pointer);
+          this.state = { status: "partner" };
+        } else {
+          this.gamePlay.setCursor(cursors.pointer);
+          this.gamePlay.selectCell(index, "green");
+          this.state = { status: "go", index };
+        }
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
         this.state = null;
@@ -486,19 +550,19 @@ export default class GameController {
 
       this.characterArr.forEach((item) => {
         if (
-          item.character.type === "daemon" ||
-          item.character.type === "vampire" ||
-          item.character.type === "undead"
+          item.character.type == "daemon" ||
+          item.character.type == "vampire" ||
+          item.character.type == "undead"
         ) {
           if (
             attackArray.indexOf(item.position) != -1 &&
-            index === item.position
+            index == item.position
           ) {
             this.gamePlay.setCursor(cursors.crosshair);
             this.gamePlay.selectCell(index, "red");
             this.state = { status: "attack", target: item };
           }
-        } else if (item.position === index) {
+        } else if (item.position == index) {
           this.gamePlay.setCursor(cursors.pointer);
         }
       });
@@ -507,13 +571,16 @@ export default class GameController {
 
   onCellLeave(index) {
     // TODO: react to mouse leave
-    if (this.selectedChar !== null && this.selectedChar.position !== index) {
+    this.saveFlag = false;
+    if (this.selectedChar != null && this.selectedChar.position != index) {
       this.gamePlay.deselectCell(index);
     }
   }
 
   newGame() {
     this.level = 1;
+    this.loadFlag = false;
+    this.saveFlag = false;
     this.characterArr = [];
     this.selectedChar = null;
     this.state = null;
@@ -522,13 +589,15 @@ export default class GameController {
   }
 
   saveGame() {
-    const saveObj = {};
-    saveObj.charArr = this.characterArr;
-    saveObj.balls = this.balls;
-    saveObj.level = this.level;
-
-    this.stateService.save(GameState(saveObj));
-    GamePlay.showMessage("Игра загружена!");
+    if (!this.saveFlag) {
+      const saveObj = {};
+      saveObj.charArr = this.characterArr;
+      saveObj.balls = this.balls;
+      saveObj.level = this.level;
+      this.stateService.save(GameState(saveObj));
+      this.saveFlag = true;
+      GamePlay.showMessage("Игра загружена!");
+    }
   }
 
   loadGame() {
