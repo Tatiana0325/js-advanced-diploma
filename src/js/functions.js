@@ -15,10 +15,11 @@ export function matrix(length) {
 
 export function binar(position, length) {
   let arr = matrix(length);
+
   let i = 0;
   let j = 0;
   let flag = false;
-
+  // вот это выпилить
   arr.forEach((element) => {
     element.forEach((item) => {
       if (item === position) {
@@ -32,7 +33,6 @@ export function binar(position, length) {
       flag = false;
     }
   });
-
   return [j, i];
 }
 
@@ -62,7 +62,8 @@ export function distArray(position, length, dist) {
   }
 
   const distArr = [];
-
+  console.log('position')
+  console.log(charBinarPosition);
   matrixArr.forEach((element) => {
     element.forEach((el) => {
       const binarEl = binar(el, length);
@@ -72,6 +73,8 @@ export function distArray(position, length, dist) {
         binarEl[1] >= minY &&
         binarEl[1] <= maxY
       ) {
+        console.log('ok:');
+        console.log(binarEl); // добавить вычет позиций где кто-то стоит!!!
         distArr.push(el);
       }
     });

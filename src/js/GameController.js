@@ -276,16 +276,23 @@ export default class GameController {
         });
 
         const player = teamComp[indexComp];
+
+        console.log(player.position);
+        console.log(this.gamePlay.boardSize ** 2);
+        console.log(player.character.step);
+
         const copmStep = distArray(
           player.position,
           this.gamePlay.boardSize ** 2,
           player.character.step
         );
 
+        console.log(copmStep);
+
         let indexSet = new Set();
 
-        while (indexSet.size < 1) {
-          let indexC = Math.floor(Math.random() * copmStep.length);
+        while (indexSet.size < 1) { // это вообще не должно работать
+          let indexC = Math.floor(Math.random() * copmStep.length); // это просто номер, а не координата, номер от длины массива возможных шагов
           if (userPositions.indexOf(indexC) === -1) {
             indexSet.add(indexC);
           }
@@ -294,7 +301,7 @@ export default class GameController {
         const indexArray = Array.from(indexSet);
 
         let indexChar = this.characterArr.indexOf(player);
-        this.characterArr[indexChar].position = indexArray[0];
+        this.characterArr[indexChar].position = indexArray[0];  // похоже, что это и есть причина ухода персонажей на верх, нужно выставить случайную позицию из copmStep а не нулевую не очень понятно откуда
       }
     } else {
       this.characterArr.forEach(
@@ -319,6 +326,7 @@ export default class GameController {
   }
 
   onCellClick(index) {
+    this.gamePlay.deselectCell(index);
     // TODO: react to click
     this.saveFlag = false;
     this.characterArr.forEach((item) => {
