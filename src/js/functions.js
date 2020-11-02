@@ -1,3 +1,5 @@
+import Character from "./Character";
+
 export function matrix(length) {
   const matrix = [];
   let el = 0;
@@ -13,32 +15,15 @@ export function matrix(length) {
   return matrix;
 }
 
-export function binar(position, length) {
-  let arr = matrix(length);
-  let i = 0;
-  let j = 0;
-  let flag = false;
+export function binar(position) {
+  let i = Math.trunc(position / 8);
+  let j = position % 8;
 
-  arr.forEach((element) => {
-    element.forEach((item) => {
-      if (item === position) {
-        i = element.indexOf(item);
-        flag = true;
-      }
-    });
-
-    if (flag) {
-      j = arr.indexOf(element);
-      flag = false;
-    }
-  });
-
-  return [j, i];
+  return [i, j];
 }
 
-export function distArray(position, length, dist) {
-  const charBinarPosition = binar(position, length);
-  const matrixArr = matrix(length);
+export function distArray(position, matrixArr, dist) {
+  const charBinarPosition = binar(position);
 
   let minX = charBinarPosition[0] - dist;
   let maxX = charBinarPosition[0] + dist;
@@ -49,28 +34,28 @@ export function distArray(position, length, dist) {
     minX = 0;
   }
 
-  if (maxX >= Math.sqrt(length) - 1) {
-    maxX = Math.sqrt(length) - 1;
+  if (maxX > 8) {
+    maxX = 7;
   }
 
   if (minY < 0) {
     minY = 0;
   }
 
-  if (maxY >= Math.sqrt(length) - 1) {
-    maxY = Math.sqrt(length) - 1;
+  if (maxY > 8) {
+    maxY = 7;
   }
-
+  
   const distArr = [];
 
-  matrixArr.forEach((element) => {
-    element.forEach((el) => {
-      const binarEl = binar(el, length);
+  matrixArr.forEach((arr) => {
+    arr.forEach((el) => {
+      const binarEl = binar(el);
       if (
         binarEl[0] >= minX &&
         binarEl[0] <= maxX &&
         binarEl[1] >= minY &&
-        binarEl[1] <= maxY
+        binarEl[1] <= maxY 
       ) {
         distArr.push(el);
       }

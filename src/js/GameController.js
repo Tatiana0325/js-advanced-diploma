@@ -5,7 +5,7 @@ import Team from "./Team";
 import { generateTeam } from "./generators";
 import cursors from "./cursors";
 import GameState from "./GameState";
-import { distArray } from "./functions";
+import { distArray, matrix } from "./functions";
 
 function correctType(type) {
   return type === "bowman" || type === "swordsman" || type === "magician"
@@ -18,6 +18,7 @@ export default class GameController {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
     this.level = 1;
+    this.matrix = matrix(64);
     this.characterArr = [];
     this.selectedChar = null;
     this.state = null;
@@ -229,7 +230,7 @@ export default class GameController {
       teamComp.forEach((item) => {
         let attackArr = distArray(
           item.position,
-          this.gamePlay.boardSize ** 2,
+          this.matrix,
           item.character.hit
         );
         teamUser.forEach((elem) => {
@@ -270,31 +271,28 @@ export default class GameController {
         );
       } else {
         let indexComp = Math.floor(Math.random() * teamComp.length);
-        const userPositions = [];
-        teamUser.forEach((item) => {
-          userPositions.push(item.position);
-        });
 
         const player = teamComp[indexComp];
-        const copmStep = distArray(
+
+        let compStep = 0;
+        compStep = distArray(
           player.position,
-          this.gamePlay.boardSize ** 2,
+          this.matrix,
           player.character.step
         );
 
-        let indexSet = new Set();
+        this.characterArr.forEach((item) => {
+          if(compStep.indexOf(item.position) !== -1) {
+            let el = compStep.indexOf(item.position);
+            compStep.splice(el, 1);
+          }          
+        });
 
-        while (indexSet.size < 1) {
-          let indexC = Math.floor(Math.random() * copmStep.length);
-          if (userPositions.indexOf(indexC) === -1) {
-            indexSet.add(indexC);
-          }
-        }
-
-        const indexArray = Array.from(indexSet);
+        let indexC = Math.floor(Math.random() * compStep.length);
+        let step = compStep[indexC];
 
         let indexChar = this.characterArr.indexOf(player);
-        this.characterArr[indexChar].position = indexArray[0];
+        this.characterArr[indexChar].position = step;
       }
     } else {
       this.characterArr.forEach(
@@ -305,10 +303,10 @@ export default class GameController {
         this.characterArr.forEach(
           (item) => (this.balls += item.character.health)
         );
+        GamePlay.showMessage(`Вы выйграли!\n Счет: ${this.balls}`);
         this.characterArr = [];
         this.selectedChar = null;
         this.state = null;
-        GamePlay.showMessage(`Вы выйграли!\n Счет: ${this.balls}`);
       } else {
         this.init();
         this.events();
@@ -320,7 +318,9 @@ export default class GameController {
 
   onCellClick(index) {
     // TODO: react to click
+    this.gamePlay.deselectCell(index);
     this.saveFlag = false;
+    this.loadFlag = false;
     this.characterArr.forEach((item) => {
       if (item.position === index) {
         if (
@@ -344,9 +344,9 @@ export default class GameController {
         } else if (this.state !== null && this.state.status === "attack") {
           const battle = async () => {
             const attack = await this.userAttack();
+            this.gamePlay.deselectCell(this.selectedChar.position);
             this.state = null;
             const bot = await this.compGame();
-            this.gamePlay.deselectCell(this.selectedChar.position);
             this.selectedChar = null;
             return null;
           };
@@ -380,17 +380,16 @@ export default class GameController {
     });
 
     if (userT.length === 0) {
-      this.characterArr = [];
-      this.selectedChar = null;
-      this.gamePlay.redrawPositions(this.characterArr);
-      this.state = null;
       GamePlay.showMessage(`Вы проиграли!\n Счет: ${this.balls}`);
+      this.newGame();
     }
   }
 
   onCellEnter(index) {
     // TODO: react to mouse enter
+    this.gamePlay.deselectCell(index);
     this.saveFlag = false;
+    this.loadFlag = false;
     const charbase = {
       medal: "\ud83c\udf96",
       swords: "\u2694",
@@ -421,7 +420,7 @@ export default class GameController {
     if (this.selectedChar != null) {
       const stepArray = distArray(
         this.selectedChar.position,
-        this.gamePlay.boardSize ** 2,
+        this.matrix,
         this.selectedChar.character.step
       );
       if (stepArray.indexOf(index) !== -1) {
@@ -442,7 +441,7 @@ export default class GameController {
       }
       const attackArray = distArray(
         this.selectedChar.position,
-        this.gamePlay.boardSize ** 2,
+        this.matrix,
         this.selectedChar.character.hit
       );
 
@@ -466,6 +465,7 @@ export default class GameController {
   onCellLeave(index) {
     // TODO: react to mouse leave
     this.saveFlag = false;
+    this.loadFlag = false;
     if (this.selectedChar !== null && this.selectedChar.position !== index) {
       this.gamePlay.deselectCell(index);
     }
